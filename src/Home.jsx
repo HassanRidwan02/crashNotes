@@ -1,6 +1,7 @@
 import Navbar from './Navbar/index'
 import { Link } from 'react-router-dom'
 import HeroSection from './components/Hero/HeroSection'
+import Footer from './components/Footer/Footer'
 
 export default function Home() {
     return (
@@ -14,7 +15,7 @@ export default function Home() {
             </Navbar>
 
             <HeroSection />
-
+            <Footer />
         </div>
     )
 }

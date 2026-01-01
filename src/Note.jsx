@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import Navbar from './Navbar/index'
+import Footer from './components/Footer/Footer'
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -318,6 +319,7 @@ export default function Note() {
                         </div>
                     )}
                 </main>
+                <Footer />
             </div>
 
             <style>{`
