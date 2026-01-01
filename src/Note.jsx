@@ -41,6 +41,13 @@ export default function Note() {
     const handleGenerate = async () => {
         if (!topic.trim()) return;
 
+        console.log("Using API Key:", API_KEY ? `...${API_KEY.slice(-4)}` : "UNDEFINED");
+
+        if (!API_KEY) {
+            setError("API Key is missing. Please ensure VITE_GEMINI_API_KEY is set in .env.local and server is restarted.");
+            return;
+        }
+
         setIsLoading(true);
         setStory(null);
         setError(null);
