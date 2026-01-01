@@ -182,13 +182,16 @@ export default function Note() {
                         )}
 
                         <div style={{
-                            position: 'relative',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '15px',
                             maxWidth: '600px',
-                            margin: '0 auto'
+                            margin: '0 auto',
+                            alignItems: 'stretch'
                         }}>
                             <input
                                 type="text"
-                                placeholder="Enter a topic (e.g., Quantum Physics..."
+                                placeholder="Enter a topic (e.g., Quantum Physics...)"
                                 value={topic}
                                 onChange={(e) => setTopic(e.target.value)}
                                 style={{
@@ -217,11 +220,7 @@ export default function Note() {
                                 onClick={handleGenerate}
                                 disabled={isLoading || !topic.trim()}
                                 style={{
-                                    position: 'absolute',
-                                    right: '10px',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    padding: '12px 30px',
+                                    padding: '15px 30px',
                                     background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
                                     color: 'white',
                                     border: 'none',
@@ -230,7 +229,10 @@ export default function Note() {
                                     fontWeight: '600',
                                     cursor: isLoading ? 'wait' : 'pointer',
                                     opacity: isLoading || !topic.trim() ? 0.7 : 1,
-                                    transition: 'all 0.3s ease'
+                                    transition: 'all 0.3s ease',
+                                    alignSelf: 'center',
+                                    width: '100%',
+                                    maxWidth: '300px'
                                 }}
                             >
                                 {isLoading ? 'Thinking...' : 'Start Crash Course'}
