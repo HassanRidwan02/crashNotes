@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function HeroSection() {
     return (
         <section className="hero">
@@ -6,7 +8,9 @@ export default function HeroSection() {
                 Instant storytelling explanations for any topic.
                 Understand fast before deep studying.
             </p>
-            <button className="cta-button">Get Started</button>
+            <Link to="/note">
+                <button className="cta-button">Get Started</button>
+            </Link>
         </section>
     )
 }

@@ -1,4 +1,5 @@
 import Navbar from './Navbar/index'
+import { Link } from 'react-router-dom'
 import HeroSection from './components/Hero/HeroSection'
 
 export default function Home() {
@@ -7,8 +8,8 @@ export default function Home() {
             <Navbar>
                 <Navbar.Logo>crashNotes</Navbar.Logo>
                 <Navbar.Links>
-                    <a>Home</a>
-                    <a>About</a>
+                    <Navbar.Link to="/">Home</Navbar.Link>
+                    <Navbar.Link to="/about">About</Navbar.Link>
                 </Navbar.Links>
             </Navbar>
 
