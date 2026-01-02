@@ -149,7 +149,7 @@ export default function Note() {
                     <Navbar.Logo>crashNotes</Navbar.Logo>
                     <Navbar.Links>
                         <Navbar.Link to="/">Home</Navbar.Link>
-                        <Navbar.Link to="/about">About</Navbar.Link>
+                        <Navbar.Link to="/contact">Contact Us</Navbar.Link>
                     </Navbar.Links>
                 </Navbar>
 
