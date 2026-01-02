@@ -231,7 +231,7 @@ export default function Note() {
                                     background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
                                     color: 'white',
                                     border: 'none',
-                                    borderRadius: '40px',
+                                    borderRadius: '30px',
                                     fontSize: '1rem',
                                     fontWeight: '600',
                                     cursor: isLoading ? 'wait' : 'pointer',
