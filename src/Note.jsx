@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
+import html2pdf from 'html2pdf.js'
 import Navbar from './Navbar/index'
 import Footer from './components/Footer/Footer'
 
@@ -11,11 +12,18 @@ export default function Note() {
     const [isVisible, setIsVisible] = useState(false);
 
     // Logic state
-    const [topic, setTopic] = useState('');
+    const [topic, setTopic] = useState(() => localStorage.getItem('lastTopic') || '');
     const [isLoading, setIsLoading] = useState(false);
     const [story, setStory] = useState(null);
     const [error, setError] = useState(null);
     const [copied, setCopied] = useState(false); // Copy state
+    const [recentNotes, setRecentNotes] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('recentNotes')) || [];
+        } catch (e) {
+            return [];
+        }
+    });
 
     useEffect(() => {
         if (copied) {
@@ -38,8 +46,9 @@ export default function Note() {
         setIsVisible(true);
     }, []);
 
-    const handleGenerate = async () => {
-        if (!topic.trim()) return;
+    const handleGenerate = async (targetTopic = topic) => {
+        const topicToUse = targetTopic.trim();
+        if (!topicToUse) return;
 
         console.log("Using API Key:", API_KEY ? `...${API_KEY.slice(-4)}` : "UNDEFINED");
 
@@ -51,6 +60,8 @@ export default function Note() {
         setIsLoading(true);
         setStory(null);
         setError(null);
+        setTopic(topicToUse);
+        localStorage.setItem('lastTopic', topicToUse);
 
         try {
             // We use direct fetch to avoid "node_modules" caching issues with the SDK
@@ -74,7 +85,7 @@ export default function Note() {
                             body: JSON.stringify({
                                 contents: [{
                                     parts: [{
-                                        text: `Create a comprehensive "Crash Course" on "${topic}". Break it down into 3-5 key concepts using clear, engaging language suitable for a beginner. \n\nCrucially, end with a specific section titled "Recommended Resources" containing 3 unique, high-quality resources (books, videos, or websites) to learn more about ${topic}.`
+                                        text: `Create a comprehensive "Crash Course" on "${topicToUse}". Break it down into 3-5 key concepts using clear, engaging language suitable for a beginner. \n\nCrucially, end with a specific section titled "Recommended Resources" containing 3 unique, high-quality resources (books, videos, or websites) to learn more about ${topicToUse}.`
                                     }]
                                 }]
                             })
@@ -99,7 +110,16 @@ export default function Note() {
             }
 
             if (success) {
-                setStory(data.candidates[0].content.parts[0].text);
+                const content = data.candidates[0].content.parts[0].text;
+                setStory(content);
+
+                // Update recent notes
+                setRecentNotes(prev => {
+                    const filtered = prev.filter(note => note.topic.toLowerCase() !== topicToUse.toLowerCase());
+                    const newRecent = [{ topic: topicToUse, content }, ...filtered].slice(0, 5);
+                    localStorage.setItem('recentNotes', JSON.stringify(newRecent));
+                    return newRecent;
+                });
             } else {
                 throw lastErr || new Error("Failed to generate content");
             }
@@ -110,6 +130,36 @@ export default function Note() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleRecentClick = (note) => {
+        setTopic(note.topic);
+        setStory(note.content);
+        localStorage.setItem('lastTopic', note.topic);
+        setError(null);
+    };
+
+    const handleExportPDF = () => {
+        if (!story) return;
+
+        const element = document.getElementById('note-content');
+        const opt = {
+            margin: [15, 15],
+            filename: `CrashCourse_${topic.replace(/\s+/g, '_')}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Temporary style for PDF generation to ensure readability
+        const originalStyle = element.style.cssText;
+        element.style.color = '#333333';
+        element.style.background = '#ffffff';
+        element.style.padding = '20px';
+
+        html2pdf().set(opt).from(element).save().then(() => {
+            element.style.cssText = originalStyle;
+        });
     };
 
     return (
@@ -224,7 +274,7 @@ export default function Note() {
                             />
 
                             <button
-                                onClick={handleGenerate}
+                                onClick={() => handleGenerate()}
                                 disabled={isLoading || !topic.trim()}
                                 style={{
                                     padding: '15px 30px',
@@ -245,6 +295,40 @@ export default function Note() {
                                 {isLoading ? 'Thinking...' : 'Start Crash Course'}
                             </button>
                         </div>
+
+                        {/* Recent Notes Section */}
+                        {recentNotes.length > 0 && (
+                            <div style={{ marginTop: '30px' }}>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '10px' }}>Recently Viewed:</p>
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '10px',
+                                    justifyContent: 'center',
+                                    flexWrap: 'wrap'
+                                }}>
+                                    {recentNotes.map((note, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => handleRecentClick(note)}
+                                            style={{
+                                                padding: '8px 16px',
+                                                background: 'rgba(255, 255, 255, 0.05)',
+                                                border: '1px solid var(--glass-border)',
+                                                borderRadius: '20px',
+                                                color: 'var(--text-main)',
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s ease'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                                        >
+                                            {note.topic}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Result Section */}
@@ -260,41 +344,75 @@ export default function Note() {
                             position: 'relative' // For absolute positioning of copy button
                         }}>
                             {!isLoading && story && (
-                                <button
-                                    onClick={handleCopy}
-                                    style={{
-                                        position: 'absolute',
-                                        top: '20px',
-                                        right: '20px',
-                                        background: 'rgba(255, 255, 255, 0.1)',
-                                        border: '1px solid var(--glass-border)',
-                                        borderRadius: '12px',
-                                        padding: '10px',
-                                        cursor: 'pointer',
-                                        color: 'var(--text-main)',
-                                        transition: 'all 0.3s ease',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
-                                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-                                    title="Copy Story"
-                                >
-                                    {copied ? (
-                                        <>
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#4ade80' }}>
-                                                <polyline points="20 6 9 17 4 12"></polyline>
-                                            </svg>
-                                            <span style={{ fontSize: '0.9rem', color: '#4ade80' }}>Copied!</span>
-                                        </>
-                                    ) : (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '20px',
+                                    right: '20px',
+                                    display: 'flex',
+                                    gap: '10px'
+                                }}>
+                                    <button
+                                        onClick={handleExportPDF}
+                                        style={{
+                                            background: 'rgba(255, 255, 255, 0.1)',
+                                            border: '1px solid var(--glass-border)',
+                                            borderRadius: '12px',
+                                            padding: '10px',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-main)',
+                                            transition: 'all 0.3s ease',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                                        title="Export to PDF"
+                                    >
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
                                         </svg>
-                                    )}
-                                </button>
+                                        <span style={{ fontSize: '0.9rem' }}>PDF</span>
+                                    </button>
+
+                                    <button
+                                        onClick={handleCopy}
+                                        style={{
+                                            background: 'rgba(255, 255, 255, 0.1)',
+                                            border: '1px solid var(--glass-border)',
+                                            borderRadius: '12px',
+                                            padding: '10px',
+                                            cursor: 'pointer',
+                                            color: 'var(--text-main)',
+                                            transition: 'all 0.3s ease',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                                        title="Copy Story"
+                                    >
+                                        {copied ? (
+                                            <>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#4ade80' }}>
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                                <span style={{ fontSize: '0.9rem', color: '#4ade80' }}>Copied!</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                                </svg>
+                                                <span style={{ fontSize: '0.9rem' }}>Copy</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             )}
                             {isLoading ? (
                                 <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -309,7 +427,7 @@ export default function Note() {
                                     <p style={{ marginTop: '20px', color: 'var(--text-muted)' }}>Hey! I am working on it...</p>
                                 </div>
                             ) : (
-                                <div style={{ lineHeight: '1.8', fontSize: '1.2rem', textAlign: 'left' }}>
+                                <div id="note-content" style={{ lineHeight: '1.8', fontSize: '1.2rem', textAlign: 'left' }}>
                                     <h2 style={{ marginBottom: '20px', color: 'var(--primary)' }}>Crash course on {topic}</h2>
                                     <ReactMarkdown
                                         components={{
