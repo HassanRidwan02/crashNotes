@@ -61,7 +61,7 @@ export default function About() {
                         boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
                         textAlign: 'left',
                         fontSize: '1.2rem',
-                        lineHeight: '1.8'
+                        lineHeight: '1.7'
                     }}>
                         <p style={{ marginBottom: '20px' }}>
                             CrashNotes is an AI-powered tool designed to help students understand complex topics through storytelling.
